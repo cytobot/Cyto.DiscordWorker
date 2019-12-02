@@ -2,6 +2,8 @@ github.com/bwmarrin/discordgo v0.20.1 h1:Ihh3/mVoRwy3otmaoPDUioILBJq4fdWkpsi83oj
 github.com/bwmarrin/discordgo v0.20.1/go.mod h1:O9S4p+ofTFwB02em7jkpkV8M3R0/PUVOwN61zSZ0r4Q=
 github.com/cytobot/messaging v0.0.0-20191122211147-649eed74ba79 h1:5+isujajZ2oQh9lolpAoD9zg2ea68dEo1IzBC1HttlQ=
 github.com/cytobot/messaging v0.0.0-20191122211147-649eed74ba79/go.mod h1:3aiMtR82jy9rwQgJKrblUUfiyCeqm8IWa/Pq11jye8o=
+github.com/cytobot/messaging v0.0.0-20191202024925-27c2a05d8b75 h1:oQNO4Pv+9UKlxRvXvTTa7ZnJxntxfrgoH9iuEbSR5Gw=
+github.com/cytobot/messaging v0.0.0-20191202024925-27c2a05d8b75/go.mod h1:3aiMtR82jy9rwQgJKrblUUfiyCeqm8IWa/Pq11jye8o=
 github.com/golang/protobuf v1.3.2 h1:6nsPYzhq5kReh6QImI3k5qWzO4PEbvbIW2cwSfR/6xs=
 github.com/golang/protobuf v1.3.2/go.mod h1:6lQm79b+lXiMfvg/cZm0SGofjICqVBUtrP5yJMmIC1U=
 github.com/gorilla/websocket v1.4.0 h1:WDFjx/TMzVgy9VdMMQi2K2Emtwi2QcUQsztZ/zLaH/Q=

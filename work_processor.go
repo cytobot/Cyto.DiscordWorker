@@ -18,7 +18,7 @@ func NewWorkProcessor(discordClient *DiscordClient) *WorkProcessor {
 }
 
 func (p *WorkProcessor) processWork(req *pbs.DiscordWorkRequest) {
-	msg := fmt.Sprintf("[Discord Work] Received work from %s for ", req.SourceID, req.Command)
+	msg := fmt.Sprintf("[Discord Work] Received work from %s for %s", req.SourceID, req.Command)
 	log.Println(msg)
 
 	//TODO: Handle commands
