@@ -2,24 +2,34 @@ package main
 
 import (
 	"encoding/json"
+	"runtime"
+	"time"
 
 	cytonats "github.com/cytobot/messaging/nats"
+	pbd "github.com/cytobot/messaging/transport/discord"
 	pbs "github.com/cytobot/messaging/transport/shared"
+	"github.com/golang/protobuf/ptypes"
+	"github.com/golang/protobuf/ptypes/timestamp"
 )
 
 type NatsManager struct {
 	client       *cytonats.NatsClient
-	listenerChan chan int32
+	state        *workerState
+	shutdownChan chan int32
 }
 
-func NewNatsManager(endpoint string) (*NatsManager, error) {
+var statsStartTime = time.Now()
+
+func NewNatsManager(endpoint string, state *workerState) (*NatsManager, error) {
 	client, err := cytonats.NewNatsClient(endpoint)
 	if err != nil {
 		return nil, err
 	}
 
 	return &NatsManager{
-		client: client,
+		client:       client,
+		state:        state,
+		shutdownChan: make(chan int32),
 	}, nil
 }
 
@@ -29,7 +39,6 @@ func (m *NatsManager) StartDiscordWorkListener(processor *WorkProcessor) error {
 		return err
 	}
 
-	m.listenerChan = make(chan int32)
 	go func() {
 		for {
 			select {
@@ -37,8 +46,8 @@ func (m *NatsManager) StartDiscordWorkListener(processor *WorkProcessor) error {
 				workRequest := &pbs.DiscordWorkRequest{}
 				json.Unmarshal(msg.Data, workRequest)
 
-				go processor.processWork(workRequest)
-			case <-m.listenerChan:
+				processor.processWork(workRequest)
+			case <-m.shutdownChan:
 				return
 			}
 		}
@@ -47,9 +56,45 @@ func (m *NatsManager) StartDiscordWorkListener(processor *WorkProcessor) error {
 	return nil
 }
 
+func (m *NatsManager) StartHealthCheckInterval() {
+	ticker := time.NewTicker(60 * time.Second)
+	go func() {
+		for {
+			select {
+			case <-ticker.C:
+				sendHealthMessage(m)
+			case <-m.shutdownChan:
+				ticker.Stop()
+				return
+			}
+		}
+	}()
+}
+
 func (m *NatsManager) Shutdown() {
-	if m.listenerChan != nil {
-		m.listenerChan <- 0
-	}
+	m.shutdownChan <- 1
 	m.client.Shutdown()
+}
+
+func sendHealthMessage(m *NatsManager) {
+	stats := runtime.MemStats{}
+	runtime.ReadMemStats(&stats)
+
+	content := &pbd.HealthCheckStatus{
+		Timestamp:     mapToProtoTimestamp(time.Now().UTC()),
+		InstanceID:    m.state.id,
+		ShardID:       int32(m.state.shardID),
+		Uptime:        time.Now().Sub(statsStartTime).Nanoseconds(),
+		MemAllocated:  int64(stats.Alloc),
+		MemSystem:     int64(stats.Sys),
+		MemCumulative: int64(stats.TotalAlloc),
+		TaskCount:     int32(runtime.NumGoroutine()),
+	}
+
+	m.client.Publish("worker_health", content)
+}
+
+func mapToProtoTimestamp(timeValue time.Time) *timestamp.Timestamp {
+	protoTimestamp, _ := ptypes.TimestampProto(timeValue)
+	return protoTimestamp
 }

@@ -1,31 +1,35 @@
 package main
 
 import (
-	"fmt"
 	"log"
 
+	"github.com/cytobot/commandworks"
+	cytonats "github.com/cytobot/messaging/nats"
 	pbs "github.com/cytobot/messaging/transport/shared"
+	"github.com/lampjaw/discordclient"
 )
 
 type WorkProcessor struct {
-	client *DiscordClient
+	client         *discordclient.DiscordClient
+	commandHandler *commandworks.CommandHandler
 }
 
-func NewWorkProcessor(discordClient *DiscordClient) *WorkProcessor {
+func NewWorkProcessor(discordClient *discordclient.DiscordClient, natsClient *cytonats.NatsClient, managerEndpoint string) *WorkProcessor {
 	return &WorkProcessor{
-		client: discordClient,
+		client:         discordClient,
+		commandHandler: commandworks.NewCommandHandler(managerEndpoint, natsClient),
 	}
 }
 
 func (p *WorkProcessor) processWork(req *pbs.DiscordWorkRequest) {
-	msg := fmt.Sprintf("[Discord Work] Received work from %s for %s", req.SourceID, req.Command)
-	log.Println(msg)
+	log.Printf("[Discord Work] Received work from %s for %s (%s)", req.SourceID, req.Command, req.MessageID)
 
-	//TODO: Handle commands
-	/*
-		err := p.client.SendMessage(req.ChannelID, msg)
-		if err != nil {
-			log.Println(err)
-		}
-	*/
+	var processErr error
+	if req.Type == "command" {
+		processErr = p.commandHandler.ProcessCommand(p.client, req)
+	}
+
+	if processErr != nil {
+		log.Printf("[WorkProcessor] Failed to process work: %s", processErr)
+	}
 }
